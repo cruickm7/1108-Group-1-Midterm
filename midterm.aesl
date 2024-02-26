@@ -1,0 +1,80 @@
+<!DOCTYPE aesl-source>
+<network>
+
+
+<!--list of global events-->
+
+
+<!--list of constants-->
+
+
+<!--show keywords state-->
+<keywords flag="true"/>
+
+
+<!--node thymio-II-->
+<node nodeId="1" name="thymio-II">var speed = 300
+var state = 0
+var blockState = 0
+var edge = 300
+var threshold = 3000
+var S = 0
+var F = 1
+var B = 2
+var L = 3
+var R = 4
+var sr = 800
+var sl = 800
+var sf = 0
+var prev = 0
+
+onevent button.forward
+	state = F	
+
+onevent button.backward
+	state = S
+	
+onevent prox
+	sl = prox.ground.reflected[0]
+	sr = prox.ground.reflected[1]
+	sf = prox.horizontal[2]
+	if  state != S then
+		if state != B then
+			if sl &lt; edge and sr > edge then
+				state = L
+			end
+			if sl > edge and sr &lt; edge then
+				state = R
+			end
+			if (state == R or state == L) and (sl > edge and sr > edge) then
+				state = F
+			end	
+		end
+		if sf > threshold then
+			state = B
+			blockState = 1
+		end
+	end
+	if state == S then
+		motor.left.target = 0
+		motor.right.target = 0
+	end
+	if state == F then
+		motor.left.target = speed
+		motor.right.target = speed
+	end
+	if state == L then
+		motor.left.target = 0
+		motor.right.target = speed
+	end
+	if state == R then
+		motor.left.target = speed
+		motor.right.target = 0
+	end
+	if state == B then
+		blockState = 2
+	end
+		</node>
+
+
+</network>
