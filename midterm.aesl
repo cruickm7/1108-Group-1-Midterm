@@ -13,7 +13,7 @@
 
 
 <!--node thymio-II-->
-<node nodeId="1" name="thymio-II">var speed = 300
+<node nodeId="1" name="thymio-II">var speed = 100
 var state = 0
 var blockState = 0
 var edge = 300
@@ -26,7 +26,11 @@ var R = 4
 var sr = 800
 var sl = 800
 var sf = 0
+var sfl = 0
 var prev = 0
+var min = 0
+var max = 0
+var mean = 0
 
 onevent button.forward
 	state = F	
@@ -38,6 +42,7 @@ onevent prox
 	sl = prox.ground.reflected[0]
 	sr = prox.ground.reflected[1]
 	sf = prox.horizontal[2]
+	sfl = prox.horizontal[0]
 	if  state != S then
 		if state != B then
 			if sl &lt; edge and sr > edge then
@@ -72,7 +77,17 @@ onevent prox
 		motor.right.target = 0
 	end
 	if state == B then
-		blockState = 2
+	call math.stat( prox.horizontal[0:4], min, max, mean )
+		if max > 1000 then
+			motor.left.target = 0
+			motor.right.target = -100
+		else
+			motor.left.target = 0
+			motor.right.target = 100
+		end
+		if sf &lt; edge or sl &lt; edge then
+			state = F
+		end
 	end
 		</node>
 
