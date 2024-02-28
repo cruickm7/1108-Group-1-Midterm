@@ -13,7 +13,7 @@
 
 
 <!--node thymio-II-->
-<node nodeId="1" name="thymio-II">var speed = 100
+<node nodeId="1" name="thymio-II">var speed = 250
 var state = 0
 var blockState = 0
 var edge = 300
@@ -31,6 +31,11 @@ var prev = 0
 var min = 0
 var max = 0
 var mean = 0
+var hold = 0
+var closest = 0
+var fs[5]
+var i
+var dir = 0
 
 onevent button.forward
 	state = F	
@@ -43,6 +48,12 @@ onevent prox
 	sr = prox.ground.reflected[1]
 	sf = prox.horizontal[2]
 	sfl = prox.horizontal[0]
+	fs = prox.horizontal[0:4]
+	for i in 0:4 do
+		if fs[i] > fs[closest] then
+			closest = i
+		end
+	end
 	if  state != S then
 		if state != B then
 			if sl &lt; edge and sr > edge then
@@ -51,11 +62,11 @@ onevent prox
 			if sl > edge and sr &lt; edge then
 				state = R
 			end
-			if (state == R or state == L) and (sl > edge and sr > edge) then
-				state = F
-			end	
+			#if (state == R or state == L) and (sl > edge and sr > edge) then
+			#	state = F
+			#end	
 		end
-		if sf > threshold then
+		if fs[closest] > threshold then
 			state = B
 			blockState = 1
 		end
@@ -63,33 +74,70 @@ onevent prox
 	if state == S then
 		motor.left.target = 0
 		motor.right.target = 0
+		call leds.circle(0, 0, 0, 0, 0, 0, 0, 0)
+
 	end
 	if state == F then
 		motor.left.target = speed
 		motor.right.target = speed
+		call leds.circle(32, 0, 0, 0, 0, 0, 0, 0)
 	end
 	if state == L then
 		motor.left.target = 0
 		motor.right.target = speed
+		call leds.circle(0, 0, 0, 0, 0, 0, 0, 32)
 	end
 	if state == R then
 		motor.left.target = speed
 		motor.right.target = 0
+		call leds.circle(0, 32, 0, 0, 0, 0, 0, 0)
 	end
 	if state == B then
 	call math.stat( prox.horizontal[0:4], min, max, mean )
-		if max > 1000 then
-			motor.left.target = 0
-			motor.right.target = -100
+		if closest >= 2 then
+			dir = -1
 		else
-			motor.left.target = 0
-			motor.right.target = 100
+			dir = 1
 		end
-		if sf &lt; edge or sl &lt; edge then
-			state = F
+		if max > 1500 and hold == 0 then
+			hold = 1
+			if dir == 1 then
+				motor.left.target = -100
+				motor.right.target = -500
+			else
+				motor.left.target = -500
+				motor.right.target = -100
+			end
+			
+			call leds.circle(0, 0, 0, 0, 32, 0, 0, 0)
+			timer.period[0] = 625
+		elseif hold == 0 then
+			if dir == 1 then
+				motor.left.target = 200
+				motor.right.target = 400
+			else
+				motor.left.target = 400
+				motor.right.target = 200
+			end
+			
+			call leds.circle(0, 0, 0, 0, 0, 32, 0, 0)
+			hold = 1
+			timer.period[0] = 500
+		end
+		if sr &lt; edge or sl &lt; edge and hold == 0 then
+			state = R
 		end
 	end
-		</node>
+		
+onevent timer0
+	hold = 0
+	timer.period[0] = 0
+	
+onevent timer1
+	motor.left.target = speed
+	motor.right.target = 0
+	timer.period[1] = 0
+</node>
 
 
 </network>
