@@ -23,6 +23,7 @@ var F = 1
 var B = 2
 var L = 3
 var R = 4
+var Q = 5
 var sr = 800
 var sl = 800
 var sf = 0
@@ -40,6 +41,7 @@ var fsr = 0
 var fsl = 0
 var timerType = 0
 var increase = 0
+var turnCount = 0
 
 onevent button.forward
 	state = F	
@@ -63,23 +65,20 @@ onevent prox
 	if  state != S then
 		if state != B then
 			if sl &lt; edge and sr > edge then
+				
 				state = L
 			end
 			if sl > edge and sr &lt; edge then
 				state = R
 			end
 			#if (state == R or state == L) and (sl > edge and sr > edge) then
-			#	state = F
+				#state = F
 			#end	
 		end
 		if fs[closest] > threshold then
 			state = B
 			if blockState == 0 then
-				if closest > 2 then
-					dir = 1
-				else
-					dir = -1
-				end
+				dir = -1
 			end
 			blockState = 1
 		end
@@ -93,20 +92,33 @@ onevent prox
 	end
 	
 	if state == F then
+		
 		motor.left.target = speed
 		motor.right.target = speed
 		call leds.circle(32, 0, 0, 0, 0, 0, 0, 0)
 	end
 	
 	if state == L then
-		motor.left.target = 0
+		timerType = 3
+		timer.period[0] = 3000
+		motor.left.target = 50
 		motor.right.target = speed
 		call leds.circle(0, 0, 0, 0, 0, 0, 0, 32)
 	end
-	
+	if state == Q then
+		if  dir == -1 then
+			motor.left.target = 0
+			motor.right.target = -speed
+		else
+			motor.left.target = -speed
+			motor.right.target = 0
+		end
+	end
 	if state == R then
+		timerType = 3
+		timer.period[0] = 3000
 		motor.left.target = speed
-		motor.right.target = 0
+		motor.right.target = 50
 		call leds.circle(0, 32, 0, 0, 0, 0, 0, 0)
 	end
 	
@@ -122,7 +134,7 @@ onevent prox
 				motor.left.target = -50
 				motor.right.target = -500
 			end
-			
+			turnCount = 0
 			
 			call leds.circle(0, 0, 0, 0, 32, 0, 0, 0)
 			timerType = 1
@@ -131,9 +143,9 @@ onevent prox
 		elseif blockState == 2 then
 			if  dir == 1 then
 				motor.left.target = 350
-				motor.right.target = 200
+				motor.right.target = 250
 			else
-				motor.left.target = 200
+				motor.left.target = 250
 				motor.right.target = 350
 			end
 			
@@ -144,7 +156,11 @@ onevent prox
 		end
 		if (sr &lt; edge or sl &lt; edge) and blockState == 3 then
 			timer.period[1] = 0
-			state = L
+			if  prox.ground.reflected[0] > prox.ground.reflected[1] then
+				state = L
+			else
+				state = R
+			end
 			blockState = 0
 		end
 	end
@@ -156,18 +172,35 @@ onevent timer0
 	if  timerType == 2 then
 		blockState = 3
 	end
+	if timerType == 3 then
+		state = Q
+		call leds.circle(32, 32, 32, 0, 0, 0, 0, 0)
+	end
 	timer.period[0] = 0
 	
 onevent timer1
-if  dir == 1 then
+if  turnCount &lt; 2 then
+	if  dir == 1 then
 		motor.left.target += 50
 		motor.right.target -= 25
 	else
 		motor.left.target -= 25
 		motor.right.target += 50
 	end
-	motor.left.target = motor.left.speed + 50
 	call sound.play(2)
+	
+elseif turnCount >= 2 then
+	if  dir == 1 then
+		motor.left.target = speed
+		motor.right.target = speed
+	else
+		motor.left.target = speed
+		motor.right.target = speed
+	end
+	call sound.play(2)
+turnCount += 1
+end
+
 </node>
 
 
